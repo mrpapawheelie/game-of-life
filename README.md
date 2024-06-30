@@ -1,6 +1,4 @@
-# 🌀 Spiral template
-
-A simple Streamlit app that draws a spiral. 
+# Conway's Game of Life Example
 
 [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://basic-template.streamlit.app/)
 
