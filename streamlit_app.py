@@ -1,40 +1,50 @@
-import altair as alt
 import numpy as np
-import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 import streamlit as st
 
-"""
-# Welcome to Streamlit!
+ON = 255  # alive
+OFF = 0   # dead
 
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:.
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
+def update(frame_num, img, grid, N):
+    new_grid = grid.copy()
+    for i in range(N):
+        for j in range(N):
+            total = int((grid[i, (j-1)%N] + grid[i, (j+1)%N] +
+                         grid[(i-1)%N, j] + grid[(i+1)%N, j] +
+                         grid[(i-1)%N, (j-1)%N] + grid[(i-1)%N, (j+1)%N] +
+                         grid[(i+1)%N, (j-1)%N] + grid[(i+1)%N, (j+1)%N]) / 255)
+            if grid[i, j] == ON:
+                if (total < 2) or (total > 3):
+                    new_grid[i, j] = OFF
+            else:
+                if total == 3:
+                    new_grid[i, j] = ON
+    img.set_data(new_grid)
+    grid[:] = new_grid[:]
+    return img,
 
-In the meantime, below is an example of what you can do with just a few lines of code:
-"""
+def initialize_grid(N, on_prob):
+    return np.random.choice([ON, OFF], N*N, p=[on_prob, 1-on_prob]).reshape(N, N)
 
-num_points = st.slider("Number of points in spiral", 1, 10000, 1100)
-num_turns = st.slider("Number of turns in spiral", 1, 300, 31)
+def main():
+    st.title("Conway's Game of Life")
 
-indices = np.linspace(0, 1, num_points)
-theta = 2 * np.pi * num_turns * indices
-radius = indices
+    N = st.sidebar.slider("Grid size", min_value=10, max_value=200, value=100, step=10)
+    update_interval = st.sidebar.slider("Update interval (ms)", min_value=10, max_value=1000, value=50, step=10)
+    on_prob = st.sidebar.slider("Initial probability of being alive", min_value=0.0, max_value=1.0, value=0.2, step=0.05)
 
-x = radius * np.cos(theta)
-y = radius * np.sin(theta)
+    grid = initialize_grid(N, on_prob)
+    
+    fig, ax = plt.subplots()
+    img = ax.imshow(grid, interpolation='nearest')
 
-df = pd.DataFrame({
-    "x": x,
-    "y": y,
-    "idx": indices,
-    "rand": np.random.randn(num_points),
-})
+    ani = animation.FuncAnimation(fig, update, fargs=(img, grid, N),
+                                  frames=10,
+                                  interval=update_interval,
+                                  save_count=50)
+    
+    st.pyplot(fig)
 
-st.altair_chart(alt.Chart(df, height=700, width=700)
-    .mark_point(filled=True)
-    .encode(
-        x=alt.X("x", axis=None),
-        y=alt.Y("y", axis=None),
-        color=alt.Color("idx", legend=None, scale=alt.Scale()),
-        size=alt.Size("rand", legend=None, scale=alt.Scale(range=[1, 150])),
-    ))
+if __name__ == '__main__':
+    main()
